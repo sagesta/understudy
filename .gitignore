@@ -1,0 +1,6 @@
+node_modules/
+dist/
+dist-recorder/
+*.log
+.env
+understudy.zip

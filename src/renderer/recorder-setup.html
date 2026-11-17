@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; base-uri 'none'; form-action 'none'; frame-src 'none'; connect-src 'none'; object-src 'none'">
+<title>Understudy Recorder</title>
+<link rel="stylesheet" href="recorder-setup.css">
+<script src="recorder-setup.js" defer></script>
+</head>
+<body>
+<main>
+  <p id="status" role="status" data-state="unset"><span class="dot" aria-hidden="true"></span><strong id="label">Not set up</strong></p>
+  <p>On the main PC, open Settings &gt; Other PC and press Copy recorder settings. Then press Paste and connect here.</p>
+  <button id="paste" type="button">Paste and connect</button>
+  <div class="manual">
+    <label for="settings">Or paste settings here</label>
+    <div class="entry"><textarea id="settings" rows="2" maxlength="2000" spellcheck="false" autocomplete="off" autocapitalize="off" aria-describedby="message"></textarea><button id="connect" type="button">Connect</button></div>
+  </div>
+  <p id="message" role="alert"></p>
+  <label class="autostart"><input id="autostart" type="checkbox" role="switch">Start with Windows</label>
+  <p class="note">This app sends audio from this PC to your main PC while a meeting is running: the microphone, or the computer audio, as your main PC asks. The icon in the tray shows when.</p>
+</main>
+</body>
+</html>

@@ -1,0 +1,28 @@
+{
+  "appId": "app.understudy.recorder",
+  "productName": "Understudy Recorder",
+  "directories": { "output": "dist-recorder" },
+  "extraMetadata": {
+    "name": "understudy-recorder",
+    "description": "Sends meeting audio from this PC to Understudy on your main PC.",
+    "main": "src/main/recorder-entry.js"
+  },
+  "files": [
+    "src/main/recorder-entry.js",
+    "src/main/recorder-mode.js",
+    "src/main/remote-link.js",
+    "src/renderer/capture.html",
+    "src/renderer/capture.js",
+    "src/renderer/pcm-worklet.js",
+    "src/renderer/recorder-setup.html",
+    "src/renderer/recorder-setup.js",
+    "src/renderer/recorder-setup.css",
+    "src/preload.js",
+    "src/recorder-preload.js",
+    "assets/icon.png",
+    "package.json",
+    "!node_modules/!(ws){,/**/*}"
+  ],
+  "win": { "target": ["nsis"], "icon": "assets/icon.png" },
+  "nsis": { "oneClick": true, "perMachine": false, "createStartMenuShortcut": true, "shortcutName": "Understudy Recorder" }
+}

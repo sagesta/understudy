@@ -1,0 +1,28 @@
+:root { color-scheme: light dark; --bg: #f7f8fa; --fg: #18212c; --muted: #495869; --field: #fff; --border: #8895a5; --accent: #205bc1; --error: #a02420; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #191d24; --fg: #f0f3f8; --muted: #bac5d4; --field: #242c37; --border: #738399; --accent: #8cb9ff; --error: #ffaaa3; }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; }
+body { background: var(--bg); color: var(--fg); font: 13px/1.35 "Segoe UI", sans-serif; }
+main { height: 100%; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
+p { margin: 0; }
+#status { display: flex; align-items: center; gap: 8px; font-size: 16px; }
+.dot { width: 11px; height: 11px; flex: 0 0 11px; border-radius: 50%; background: #8c8c8c; }
+[data-state="disconnected"] .dot { background: #dc4141; }
+[data-state="waiting"] .dot { background: #418cdc; }
+[data-state="sending"] .dot, [data-state="sendingMic"] .dot, [data-state="sendingRoom"] .dot { background: #23b95a; }
+[data-state="paused"] .dot { background: #eba523; }
+button, textarea { font: inherit; color: var(--fg); background: var(--field); border: 1px solid var(--border); border-radius: 5px; }
+button { padding: 7px 12px; cursor: pointer; flex-shrink: 0; }
+#paste { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+button:disabled { opacity: .6; cursor: default; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.manual { display: flex; flex-direction: column; gap: 4px; }
+.entry { display: flex; align-items: stretch; gap: 8px; }
+/* A manual paste may include credentials. Keep it masked and clear it on submission. */
+textarea { flex: 1; min-width: 0; height: 42px; padding: 6px; resize: none; -webkit-text-security: disc; }
+#message { min-height: 49px; color: var(--error); font-size: 12px; }
+.autostart { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+input { margin: 0; accent-color: var(--accent); }
+.note { color: var(--muted); font-size: 12px; margin-top: auto; }

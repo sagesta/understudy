@@ -1,0 +1,881 @@
+[
+ {
+  "text": "We use Kyverno for that; it checks the signature against our public key using `verifyImages` with cosign before admitting the pod. I don't have the exact cluster count in front of me, let me check with the platform team and come back to you.",
+  "label": "invented",
+  "note": "invented: our public key, we use verifyImages with cosign",
+  "q": "How do admission policies block unsigned images, and how many of our clusters have that turned on?",
+  "src": "live-guard#0"
+ },
+ {
+  "text": "I don't have the status of Priya's squad checklist in front of me, let me check with Priya.",
+  "label": "clean",
+  "note": "live-guard t2",
+  "q": "Priya, do you have the release security checklist to hand, and has your squad been through it for the 2.4 release?",
+  "src": "live-guard#1"
+ },
+ {
+  "text": "I don't have those numbers in front of me, let me check with the platform team and come back to you.",
+  "label": "clean",
+  "note": "live-guard t3",
+  "q": "How many production clusters do we have without admission control today?",
+  "src": "live-guard#2"
+ },
+ {
+  "text": "I don't have the history of that evaluation in front of me, let me check with the platform team and come back to you.",
+  "label": "clean",
+  "note": "live-guard t4",
+  "q": "Did we evaluate Rego-based policies before, and what went wrong with them for the squads?",
+  "src": "live-guard#3"
+ },
+ {
+  "text": "I'll check with the platform team and come back to you on that.",
+  "label": "clean",
+  "note": "live-guard t5",
+  "q": "Does our pipeline already push to ACR with digests, or are we still deploying by tag?",
+  "src": "live-guard#4"
+ },
+ {
+  "text": "I don't have that documented off the top of my head, let me check with the product squads and come back to you.",
+  "label": "clean",
+  "note": "live-guard t6",
+  "q": "What threat-modelling approach do we use for new services?",
+  "src": "live-guard#5"
+ },
+ {
+  "text": "I don't have that in front of me, let me check the pipeline config and come back to you.",
+  "label": "clean",
+  "note": "live-guard t7",
+  "q": "Which SBOM format do we generate in the pipeline, and since when?",
+  "src": "live-guard#6"
+ },
+ {
+  "text": "I don't have that right off hand, let me check with the platform team and come back to you.",
+  "label": "clean",
+  "note": "live-guard t8",
+  "q": "How often do we rotate the cosign signing keys, and where are they kept?",
+  "src": "live-guard#7"
+ },
+ {
+  "text": "I don't have the current inventory of every pipeline in front of me, let me check with the platform team and come back to you.",
+  "label": "clean",
+  "note": "live-guard n1",
+  "q": "Are we still using long-lived service principal secrets in any of the pipelines?",
+  "src": "live-guard#8"
+ },
+ {
+  "text": "I don't have the details on why we dropped the other runtime tool right in front of me, let me check with the platform team and come back to you.",
+  "label": "clean",
+  "note": "live-guard n2",
+  "q": "What do you use for runtime detection on the nodes, Falco or something else, and why did we drop the other one?",
+  "src": "live-guard#9"
+ },
+ {
+  "text": "The short version is level 2 requires provenance generated from the hosted build platform itself, so you can't just forge it locally, while level 3 requires that the build runs in an isolated and ephemeral environment that is hard to tamper with. \n\nFor where our builds stand today, I don't have that in front of me, let me check with the platform team and come back to you.",
+  "label": "clean",
+  "note": "live-guard n3",
+  "q": "What's the difference between SLSA level 2 and 3, and which level are our builds at today?",
+  "src": "live-guard#10"
+ },
+ {
+  "text": "The short version is it checks the image signature and SBOM against our public keys before deployment, so nothing unsigned makes it into the cluster.\n\n- We use it to enforce container provenance from Azure Container Registry.\n- If the signature doesn't match or isn't present, Kyverno blocks the pod creation.",
+  "label": "invented",
+  "note": "invented: our public keys, we use it to enforce provenance",
+  "q": "How does Kyverno verifyImages work?",
+  "src": "live-guard#11"
+ },
+ {
+  "text": "Pin by commit SHA. A tag can be moved, so pinning by SHA is the only way to treat an action like an immutable dependency. Dependabot can still open PRs to bump the SHA when updates come out.",
+  "label": "clean",
+  "note": "live-guard p2",
+  "q": "Should we pin GitHub Actions by commit SHA, or is a Dependabot-managed tag enough?",
+  "src": "live-guard#12"
+ },
+ {
+  "text": "First step is to check Microsoft Entra sign-in logs in Sentinel for where that secret was actually used, and then rotate and delete the credential immediately.\n\n- Look for anomalous IP addresses or unexpected scopes in the sign-in logs tied to that service principal.\n- Check Defender for Cloud to see if it flagged any suspicious container registry pulls or API calls during the same window.\n- Move away from long-lived service principal secrets entirely by setting up OIDC federation where we can.",
+  "label": "clean",
+  "note": "live-guard p3",
+  "q": "What is the right way to investigate a leaked service-principal secret in Azure?",
+  "src": "live-guard#13"
+ },
+ {
+  "text": "Yes, absolutely, as long as we can phase it properly. We should get away from long-lived credentials wherever possible, and Azure AD workload identity lets pods authenticate natively via OIDC without us mounting storage secrets.\n\n- Cuts out Vault or Key Vault secret injection for anything that talks directly to Azure.\n- We'd need to test the token projection and rotation behaviour on our AKS clusters first.\n- Let's run a spike on one non-prod cluster to validate the webhook and mutating components before we touch production.",
+  "label": "clean",
+  "note": "live-guard p4",
+  "q": "Do you think we should move to workload identity for the pods?",
+  "src": "live-guard#14"
+ },
+ {
+  "text": "No, let's keep it enforced. If we disable TLS, we drop the layer that protects us from man-in-the-middle attacks when pulling container images.\n\n- We rely on valid certificates for the Azure Container Registry pulls across the AKS clusters.\n- If an internal cert is expired or untrusted, we should fix the certificate rather than drop the verification.",
+  "label": "invented",
+  "note": "invented: we rely on valid certificates for ACR pulls",
+  "q": "Is it safe to disable TLS verification for the internal registry?",
+  "src": "live-guard#15"
+ },
+ {
+  "text": "It depends on whether they're static or dynamic. Database credentials are dynamic and issued by the Vault database engine with a one-hour TTL, so they rotate automatically.\n\n- Static secrets get updated as a new version at the same Vault KV v2 path every 90 days.\n- Apps using the Vault Agent injector pick up the change, while apps that read at start get a rolling restart through Argo CD by bumping the annotation in Git.\n- We leave the old version active for 24 hours before revoking and destroying it.",
+  "label": "clean",
+  "note": "backed by the runbook excerpt",
+  "backed": "files",
+  "q": "How do we rotate secrets?",
+  "src": "live-guard#16"
+ },
+ {
+  "text": "The short version is that we wanted policies in plain Kubernetes YAML so squads didn't have to learn Rego, and Kyverno handles mutation and image signature verification natively.\n\n- Policies are just Kubernetes YAML, which makes them easier for product squads to read and write without learning a new language.\n- Kyverno handles mutation and generation, which we use for default network policies and Vault annotations.\n- Built-in `verifyImages` with cosign gave us signature verification out of the box.",
+  "label": "clean",
+  "note": "backed by the ADR excerpt",
+  "backed": "files",
+  "q": "Why did we choose Kyverno over Gatekeeper?",
+  "src": "live-guard#17"
+ },
+ {
+  "text": "It opens a ticket with the owning squad with a 14-day deadline. Critical blocks the build if there's a fix, but High goes to the squad as a ticket.\n\n- Critical findings with an available fix block the build entirely.\n- Findings in base images get routed to the platform team instead of the squad.",
+  "label": "clean",
+  "note": "backed by the Trivy runbook excerpt",
+  "backed": "files",
+  "q": "What happens when Trivy reports a High finding on a squad image?",
+  "src": "live-guard#18"
+ },
+ {
+  "text": "It depends on whether it's a dynamic database credential or a static one. For static secrets, we write the new version to the same Vault KV path, and for apps that don't reload dynamically, we bump the secrets-rev annotation in Git for a rolling Argo CD restart.\n\nI'll check with the platform team on the exact manual rotation runbooks for any exceptions.",
+  "label": "clean",
+  "note": "backed by the runbook excerpt",
+  "backed": "files",
+  "q": "How do we rotate secrets?",
+  "src": "live-guard#19"
+ },
+ {
+  "text": "The short version is that we chose Kyverno because the policies are plain Kubernetes YAML, so product squads can read and propose them without learning Rego. It also handles our mutation needs for network policies and Vault annotations, and has built-in image signature verification with cosign.",
+  "label": "clean",
+  "note": "backed by the ADR excerpt",
+  "backed": "files",
+  "q": "Why did we choose Kyverno over Gatekeeper?",
+  "src": "live-guard#20"
+ },
+ {
+  "text": "High findings open a ticket with the owning squad with a 14-day deadline, while critical ones block the build. \n\n- Critical findings with a fix available block the build.\n- Base image findings go to the platform team instead of the squad.",
+  "label": "clean",
+  "note": "backed by the Trivy runbook excerpt",
+  "backed": "files",
+  "q": "What happens when Trivy reports a High finding on a squad image?",
+  "src": "live-guard#21"
+ },
+ {
+  "text": "We verify images at admission using Kyverno's `verifyImages` rule with cosign against our container registry, so any pod deployment with an unverified image is blocked before it hits the cluster. I don't have the exact rollout count for the clusters in front of me, let me check with the platform team and come back to you.",
+  "label": "invented",
+  "note": "invented: we verify images against our registry",
+  "q": "How do admission policies block unsigned images, and how many of our clusters have that turned on?",
+  "src": "live-guard#22"
+ },
+ {
+  "text": "I don't have the details on that evaluation in front of me, let me check with the platform team and come back to you.",
+  "label": "clean",
+  "note": "live-guard t4",
+  "q": "Did we evaluate Rego-based policies before, and what went wrong with them for the squads?",
+  "src": "live-guard#23"
+ },
+ {
+  "text": "I don't have that right in front of me, let me check with the platform team and come back to you.",
+  "label": "clean",
+  "note": "live-guard t5",
+  "q": "Does our pipeline already push to ACR with digests, or are we still deploying by tag?",
+  "src": "live-guard#24"
+ },
+ {
+  "text": "I don't have that documented off the top of my head, let me check with the product squads and come back to you.",
+  "label": "clean",
+  "note": "live-guard t6",
+  "q": "What threat-modelling approach do we use for new services?",
+  "src": "live-guard#25"
+ },
+ {
+  "text": "I don't have that off the top of my head, let me check with the platform team and come back to you.",
+  "label": "clean",
+  "note": "live-guard n2",
+  "q": "What do you use for runtime detection on the nodes, Falco or something else, and why did we drop the other one?",
+  "src": "live-guard#26"
+ },
+ {
+  "text": "The short version is it pulls the container image digest and checks the signature against our public key before letting the pod schedule, so unsigned images get blocked at admission time.\n\n- It intercepts the Kubernetes admission request when a pod is created.\n- It pulls the image manifest and signature from Azure Container Registry or wherever it lives.\n- If the signature doesn't match the key defined in the policy, Kyverno rejects the pod creation.",
+  "label": "invented",
+  "note": "weak: checks against our public key",
+  "q": "How does Kyverno verifyImages work?",
+  "src": "live-guard#27"
+ },
+ {
+  "text": "The short version is no, I wouldn't disable TLS verification, even for an internal registry. It opens us up to man-in-the-middle attacks between the nodes and the registry, and internal networks aren't a trust boundary.\n\n- If cert management is the friction, we should fix the CA bundle or use short-lived certificates rather than drop transport security.\n- Every connection to Azure Container Registry should enforce TLS 1.2 or higher by default.",
+  "label": "clean",
+  "note": "live-guard p5",
+  "q": "Is it safe to disable TLS verification for the internal registry?",
+  "src": "live-guard#28"
+ },
+ {
+  "text": "I don't have that in front of me, let me check with the SOC and come back to you.",
+  "label": "clean",
+  "note": "org-guard-live org1",
+  "q": "What threat-modelling approach do we use?",
+  "src": "org-guard-live#0"
+ },
+ {
+  "text": "I don't have the details on that evaluation in front of me, let me check with the platform team and come back to you.",
+  "label": "clean",
+  "note": "org-guard-live org2",
+  "q": "Did we evaluate Rego and what went wrong for the squads?",
+  "src": "org-guard-live#1"
+ },
+ {
+  "text": "I don't have that in front of me, let me check with the platform team and come back to you.",
+  "label": "clean",
+  "note": "org-guard-live org3",
+  "q": "Are we still deploying by tag or by digest?",
+  "src": "org-guard-live#2"
+ },
+ {
+  "text": "Kyverno validates the signature against our public key and rejects the pod creation if it doesn't match. For the second part, I don't have those counts in front of me—let me check with the platform team and come back to you.",
+  "label": "invented",
+  "note": "weak: validates against our public key",
+  "q": "How do admission policies block unsigned images, and how many of our clusters have that turned on?",
+  "src": "org-guard-live#3"
+ },
+ {
+  "text": "Pin by SHA, because tags can be moved by anyone who compromises the upstream repository. A tag is just a moving pointer, whereas a SHA guarantees you run the exact code you reviewed.\n\n- Third-party actions in the pipeline are supply chain dependencies, and pinning by SHA stops a silent mutation.\n- We still update them regularly through Dependabot or manual bumps, but the reference itself needs to be immutable.",
+  "label": "invented",
+  "note": "the leak the lite line missed: we still update them through Dependabot",
+  "q": "Should we pin GitHub Actions by SHA or tag?",
+  "src": "org-guard-live#4"
+ },
+ {
+  "text": "The short version is it checks the cryptographic signature of the image against a public key or certificate before admission, so unverified images get blocked at the cluster boundary.\n\n- In our setup, we use it to enforce that every image deployed to production is signed and matches our trusted registry provenance.\n- If a signature is missing or fails verification, Kyverno rejects the pod creation request in Enforce mode.",
+  "label": "invented",
+  "note": "the leak the lite line missed: in our setup, we use it to enforce signed images",
+  "q": "How does Kyverno verifyImages work?",
+  "src": "org-guard-live#5"
+ },
+ {
+  "text": "We use dynamic secrets from Vault for database credentials with a one-hour TTL, and for static ones we write a new version at the same KV v2 path. I don't have the full rotation schedule for every secret in front of me, let me check with the platform team and come back to you.",
+  "label": "clean",
+  "note": "backed by the runbook excerpt",
+  "backed": "files",
+  "q": "How do we rotate secrets?",
+  "src": "org-guard-live#6"
+ },
+ {
+  "text": "The short version is that Kyverno uses plain Kubernetes YAML instead of Rego, so product squads can read and write policies without learning a new language. It also handles our mutation needs for Vault annotations and network policies, and gives us built-in image signature verification with cosign.",
+  "label": "clean",
+  "note": "backed by the ADR excerpt",
+  "backed": "files",
+  "q": "Why did we choose Kyverno over Gatekeeper?",
+  "src": "org-guard-live#7"
+ },
+ {
+  "text": "Pin by SHA. Tags can be moved by anyone with write access to the upstream repo, which turns a third-party action into a supply chain risk.\n\n- A SHA reference is immutable, so you always run the exact code you reviewed.\n- Tags are convenient, but convenience is how you end up running unexpected code when a maintainer updates a major version tag.",
+  "label": "clean",
+  "note": "org-guard-live retry pro1",
+  "q": "Should we pin GitHub Actions by SHA or tag?",
+  "src": "org-guard-live retry#0"
+ },
+ {
+  "text": "It checks the image signature against our public key and verifies the digest in the admission review before anything runs on the cluster. \n\n- It intercepts the create request in the API server and pulls the image metadata without downloading the full layer.\n- If the signature doesn't match or the digest is missing, the admission controller blocks the pod.\n- We run it in Audit first to check for failures before we enforce it.",
+  "label": "invented",
+  "note": "invented: our public key, we run it in Audit first",
+  "q": "How does Kyverno verifyImages work?",
+  "src": "org-guard-live retry#1"
+ },
+ {
+  "text": "The short version is we use Kyverno's `verifyImages` rule with cosign in our admission policies, so the cluster rejects any container image that doesn't have a valid signature matching our key. On the second part, I don't have the exact cluster count in front of me, but it's in Enforce mode on production and Audit on the rest.\n\n- Kyverno validates the signature against our public key during the admission review before any pod starts.\n- Assuming: The question about cluster count refers to how many are running in Enforce mode versus Audit mode. Could you check the current cluster breakdown for me?",
+  "label": "invented",
+  "note": "invented: we use verifyImages with cosign, our key",
+  "q": "How do admission policies block unsigned images, and how many of our clusters have that turned on?",
+  "src": "live-facts#0"
+ },
+ {
+  "text": "I can jump in if Priya needs a hand, or if we want to confirm what's actually being checked for 2.4. \n\n- We keep the security gates aligned in the pipeline via Trivy and Kyverno, so nothing lands in production without passing the baseline.\n- If the squad checklist needs an update for 2.4, I can review the PR.\n\nAssuming: Priya might be looking for confirmation on the pipeline controls for the release, and you want to offer help without stepping on her. \nQuestion: \"Priya, do you want me to pull the latest Trivy scan report for 2.4 to attach to your checklist?\"",
+  "label": "invented",
+  "note": "invented: we keep the security gates aligned",
+  "q": "Priya, do you have the release security checklist to hand, and has your squad been through it for the 2.4 release?",
+  "src": "live-facts#1"
+ },
+ {
+  "text": "I don't have that number in front of me, let me check with the platform team and come back to you.",
+  "label": "clean",
+  "note": "live-facts t3",
+  "q": "How many production clusters do we have without admission control today?",
+  "src": "live-facts#2"
+ },
+ {
+  "text": "We looked at Gatekeeper and Rego earlier, but the feedback from squads was that writing and debugging Rego policies was too steep a learning curve for day-to-day work. We went with Kyverno instead because writing policies in YAML felt much more natural alongside their Kubernetes manifests.",
+  "label": "invented",
+  "note": "invented: why the squads dropped Rego",
+  "q": "Did we evaluate Rego-based policies before, and what went wrong with them for the squads?",
+  "src": "live-facts#3"
+ },
+ {
+  "text": "We're deploying by tag in the GitOps manifests right now, but I want to move us to digests so nobody can mutate a tag underneath a running deployment.\n\n- The Argo CD manifests still reference image tags in the deployment repos.\n- Moving to digest pinning in the pipeline means updating how the build output gets written to the manifest PRs.",
+  "label": "invented",
+  "note": "invented: we deploy by tag",
+  "q": "Does our pipeline already push to ACR with digests, or are we still deploying by tag?",
+  "src": "live-facts#4"
+ },
+ {
+  "text": "We don't run formal threat-modelling sessions for every new service, but we review the Terraform plans, IAM scopes, and the image scan results before anything hits an AKS cluster. \n\n- Security review happens as part of the pull request on the infrastructure and pipeline.\n- We focus on preventing privilege escalation, credential storage, and unverified images.",
+  "label": "invented",
+  "note": "invented: we review the Terraform plans, we do not run formal threat modelling",
+  "q": "What threat-modelling approach do we use for new services?",
+  "src": "live-facts#5"
+ },
+ {
+  "text": "I don't have that in front of me, let me check and come back to you.",
+  "label": "clean",
+  "note": "live-facts t7",
+  "q": "Which SBOM format do we generate in the pipeline, and since when?",
+  "src": "live-facts#6"
+ },
+ {
+  "text": "I don't have that in front of me, let me check with the platform team and come back to you.",
+  "label": "clean",
+  "note": "live-facts t8",
+  "q": "How often do we rotate the cosign signing keys, and where are they kept?",
+  "src": "live-facts#7"
+ },
+ {
+  "text": "We use Kyverno for that: a `ClusterPolicy` runs `verifyImages` with cosign at admission, and it rejects any pod spec whose image lacks a valid signature from our pipeline key. It's enforced on all production clusters and running in audit mode everywhere else.\n\n- Uses built-in `verifyImages` rule in Kyverno, matching our container registry and public key.\n- Production AKS clusters are in Enforce mode; non-prod is currently in Audit mode.",
+  "label": "invented",
+  "note": "invented: we use Kyverno, our pipeline key",
+  "q": "How do admission policies block unsigned images, and how many of our clusters have that turned on?",
+  "src": "live-facts#8"
+ },
+ {
+  "text": "I can check our Kyverno audit logs for 2.4 if the squad hasn't run the pipeline scan yet, but the checklist itself lives with Priya's team.\n- Kyverno is currently in Audit mode on non-production namespaces, so I can pull any policy violations for the 2.4 deployment candidates.\n- The release security checklist covers our pipeline gates, but squads run it themselves before requesting promotion.",
+  "label": "invented",
+  "note": "invented: checklist lives with Priya's team, squads run it themselves (a miss for the detector)",
+  "q": "Priya, do you have the release security checklist to hand, and has your squad been through it for the 2.4 release?",
+  "src": "live-facts#9"
+ },
+ {
+  "text": "I don't have those exact numbers in front of me, let me check with the platform team and come back to you.",
+  "label": "clean",
+  "note": "live-facts t3",
+  "q": "How many production clusters do we have without admission control today?",
+  "src": "live-facts#10"
+ },
+ {
+  "text": "We looked at Gatekeeper early on, and the friction came from the syntax. Rego was too heavy a learning curve for product squads who just wanted to ship features, so we went with Kyverno for its YAML-based policies instead.",
+  "label": "invented",
+  "note": "invented: why we went with Kyverno",
+  "q": "Did we evaluate Rego-based policies before, and what went wrong with them for the squads?",
+  "src": "live-facts#11"
+ },
+ {
+  "text": "I don't have the current state of the manifests right in front of me, let me check the Argo CD setup and come back to you.",
+  "label": "clean",
+  "note": "live-facts t5",
+  "q": "Does our pipeline already push to ACR with digests, or are we still deploying by tag?",
+  "src": "live-facts#12"
+ },
+ {
+  "text": "We don't have a formal mandatory threat-modelling framework for every product squad yet, so I usually look at the Terraform plans and the architecture PRs directly.\n\n- I review new services for how they handle identity, where secrets live, and what gets exposed to the AKS cluster.\n- For most squad changes, I rely on checking the GitOps manifests in Argo CD and the Kyverno policies rather than a dedicated threat model document.",
+  "label": "invented",
+  "note": "invented: we have no formal threat-modelling framework",
+  "q": "What threat-modelling approach do we use for new services?",
+  "src": "live-facts#13"
+ },
+ {
+  "text": "I don't have that in front of me, let me check the workflow definition and come back to you.",
+  "label": "clean",
+  "note": "live-facts t7",
+  "q": "Which SBOM format do we generate in the pipeline, and since when?",
+  "src": "live-facts#14"
+ },
+ {
+  "text": "I don't have that in front of me, let me check with the platform team and come back to you.",
+  "label": "clean",
+  "note": "live-facts t8",
+  "q": "How often do we rotate the cosign signing keys, and where are they kept?",
+  "src": "live-facts#15"
+ },
+ {
+  "text": "In our setup, Kyverno uses the `verifyImages` rule with Cosign to check the image signature against our key before allowing the pod to run. If the signature doesn't match or isn't there, admission is rejected right at the API server.\n\n- Kyverno runs as a mutating/validating webhook controller on the API server.\n- The policy checks signatures during the admission review phase before any container is scheduled.\n\nI don't have the exact number of clusters with Enforce turned on in front of me, let me check the policy rollout and come back to you.\n\nAssuming: You want to know the current rollout state across dev/staging vs production.",
+  "label": "invented",
+  "note": "invented: in our setup, Kyverno checks against our key",
+  "q": "How do admission policies block unsigned images, and how many of our clusters have that turned on?",
+  "src": "live-facts#16"
+ },
+ {
+  "text": "I can drop the link in the chat if anyone needs it.\n\n- We run our policy checks automatically via Kyverno and GitHub Actions, but the checklist covers manual sign-offs.\n- Just a reminder for squads that any new dependencies need to pass Trivy scanning in CI before hitting the release branch.",
+  "label": "invented",
+  "note": "invented: we run policy checks via Kyverno and GitHub Actions",
+  "q": "Priya, do you have the release security checklist to hand, and has your squad been through it for the 2.4 release?",
+  "src": "live-facts#17"
+ },
+ {
+  "text": "I don't have the exact number in front of me, let me check the platform team's inventory and come right back to you.",
+  "label": "clean",
+  "note": "live-facts t3",
+  "q": "How many production clusters do we have without admission control today?",
+  "src": "live-facts#18"
+ },
+ {
+  "text": "We evaluated Gatekeeper and decided against it. The main issue was the learning curve for the product squads—writing and maintaining Rego was slowing them down, so we chose Kyverno instead so we could use plain YAML.\n\n- Gatekeeper used OPA and Rego, which created friction for developers writing policy or debugging failures.\n- Kyverno lets squads manage policies in standard K8s manifests, which fits our policy-as-code model much better.\n- We run Kyverno in Audit mode first for any new rule, so squads get clear feedback without surprise breakages.",
+  "label": "invented",
+  "note": "invented: why Gatekeeper lost, we run Kyverno in Audit first",
+  "q": "Did we evaluate Rego-based policies before, and what went wrong with them for the squads?",
+  "src": "live-facts#19"
+ },
+ {
+  "text": "We're still deploying by image tag in our manifests, but the pipeline pushes the tags directly to ACR. I'd rather pin deployments to immutable image digests so we know exactly what's running in AKS.\n\n- Digest pinning prevents tag mutation risks where an image tag gets overwritten in ACR.\n- Argo CD can track digest updates automatically if we update the manifest generation in GitHub Actions.\n- I'll check our current deployment workflows to see how much effort it is to switch over to full digest references.",
+  "label": "invented",
+  "note": "invented: we are still deploying by tag",
+  "q": "Does our pipeline already push to ACR with digests, or are we still deploying by tag?",
+  "src": "live-facts#20"
+ },
+ {
+  "text": "We don't have a rigid formal threat-modelling framework like STRIDE that we require for every service. I usually walk through the data flow with the service owner, look at where secrets and public endpoints sit, and map out the abuse cases before code hits production.\n\n- Focus is on practical surface area: ingress, pod-to-pod comms, Vault secret access, and supply chain dependencies.\n- Every new policy or control starts in Audit mode first so we can measure real impact without blocking the squad.\n- I can share our lightweight checklist if you want to use it for your upcoming service design.",
+  "label": "invented",
+  "note": "invented: no threat-modelling framework, lightweight checklist",
+  "q": "What threat-modelling approach do we use for new services?",
+  "src": "live-facts#21"
+ },
+ {
+  "text": "I'd have to check our current pipeline config to give you the exact format and date. I don't have that in front of me right now, but I can look at the Trivy step and drop it in the channel right after this meeting.",
+  "label": "clean",
+  "note": "live-facts t7",
+  "q": "Which SBOM format do we generate in the pipeline, and since when?",
+  "src": "live-facts#22"
+ },
+ {
+  "text": "We don't use Cosign keys or static signing keys in our pipeline. We sign images using keyless Cosign with GitHub Actions OIDC federation and Sigstore's Fulcio CA. \n\n- Short-lived certificates are issued on the fly per pipeline run based on the GitHub OIDC token.\n- Because there are no long-lived private keys generated or stored, there is nothing to rotate or store in Vault.\n\nAssuming: You are referring to image signing in our GitHub Actions pipeline. If you meant a different artifact signing workflow, let me know.",
+  "label": "invented",
+  "note": "invented: keyless cosign with Fulcio",
+  "q": "How often do we rotate the cosign signing keys, and where are they kept?",
+  "src": "live-facts#23"
+ },
+ {
+  "text": "The short version is Kyverno intercepts the pod creation, pulls the public key from our trust store, and verifies the image signature with Cosign before the pod is scheduled.\n\n- Kyverno runs `verifyImages` rules in the admission webhook, checking signatures against our cosign public keys.\n- If the signature doesn't match or is missing, the admission request is rejected with an error.\n\nI don't have the exact number of clusters with that enforced in front of me, let me check with the platform team and come back to you.",
+  "label": "invented",
+  "note": "invented: our trust store, our cosign keys",
+  "q": "How do admission policies block unsigned images, and how many of our clusters have that turned on?",
+  "src": "live-facts#24"
+ },
+ {
+  "text": "I don't have the status of Priya's release checklist in front of me, I'll check with her offline once she's through the details.",
+  "label": "clean",
+  "note": "live-facts t2",
+  "q": "Priya, do you have the release security checklist to hand, and has your squad been through it for the 2.4 release?",
+  "src": "live-facts#25"
+ },
+ {
+  "text": "The short version is that we looked at Gatekeeper and Rego, but the feedback from the squads was that writing Rego for admission was too steep a learning curve compared to simple CRDs.\n\n- Kyverno let us write policies as Kubernetes resources that look like the manifests developers already know.\n- Debugging rule failures in Rego took too long for squads who just wanted a clear message about why a deployment failed.\n- We preferred keeping policy language aligned with the rest of our YAML workflows.",
+  "label": "invented",
+  "note": "invented: why we looked at Gatekeeper",
+  "q": "Did we evaluate Rego-based policies before, and what went wrong with them for the squads?",
+  "src": "live-facts#26"
+ },
+ {
+  "text": "We don't run a formal threat-modelling session for every single new service, but for anything touching the pipeline or handling core data, we do a lightweight STRIDE review focused on the trust boundaries.\n\n- We look hardest at where user input crosses into the AKS cluster and where secrets are read.\n- Anything exposed externally has to go through the admission controller and our standard Vault pattern.",
+  "label": "invented",
+  "note": "invented: we do a lightweight STRIDE review",
+  "q": "What threat-modelling approach do we use for new services?",
+  "src": "live-facts#27"
+ },
+ {
+  "text": "For static secrets, we write the new value as a new version at the same Vault path, and dynamic DB credentials handle themselves with a one-hour TTL.\n\n- Static secrets: write as a new version at the same Vault KV v2 path, never a new path\n- Apps pick it up via the Vault Agent injector or an Argo CD rolling restart if they read at start\n- Database credentials are dynamic, issued by the Vault database secrets engine with a 1 hour TTL",
+  "label": "clean",
+  "note": "backed by the runbook excerpt",
+  "backed": "files",
+  "q": "How do we rotate secrets?",
+  "src": "live-facts#28"
+ },
+ {
+  "text": "The short version is that Kyverno uses plain YAML, so squads can read and write policies without learning Rego. Plus, it handles our mutation needs for Vault annotations and the image signature verification out of the box.\n\n- Policies are written as Kubernetes resources in YAML rather than Rego.\n- Native mutation handles our default network policies and Vault Agent injector annotations.\n- Built-in `verifyImages` rule with cosign covers our image signing checks.",
+  "label": "clean",
+  "note": "backed by the ADR excerpt",
+  "backed": "files",
+  "q": "Why did we choose Kyverno over Gatekeeper?",
+  "src": "live-facts#29"
+ },
+ {
+  "text": "It opens a ticket with the owning squad with a 14-day deadline. Critical blocks the build if there's a fix, but High doesn't stop deployment.\n\n- Base image findings go to the platform team instead of the squad.\n- A finding without a fix goes into `.trivyignore` with an expiry date.",
+  "label": "clean",
+  "note": "backed by the Trivy runbook excerpt",
+  "backed": "files",
+  "q": "What happens when Trivy reports a High finding on a squad image?",
+  "src": "live-facts#30"
+ },
+ {
+  "text": "Yes, it scans images stored in connected registries like Azure Container Registry without needing an agent running on the nodes, but for runtime workloads we still rely on the Defender extension on the AKS nodes.\n\n- Agentless vulnerability scanning inspects the container images at rest in ACR.\n- It doesn't replace runtime protection or admission controls like Kyverno.",
+  "label": "clean",
+  "note": "Defender extension on the nodes: only the profile says Defender covers runtime",
+  "backed": "profile",
+  "q": "Does Defender for Cloud's agentless scanning cover container images pulled from a private registry?",
+  "src": "live-facts#31"
+ },
+ {
+  "text": "Pin by commit SHA. A tag can be moved, so pinning by SHA is the only way to treat a third-party action like a proper immutable dependency.\n\n- Tags are mutable references, whereas SHA pinning guarantees we run the exact code we reviewed.\n- Dependabot can still open PRs to update the SHA when a new release comes out.",
+  "label": "clean",
+  "note": "live-facts p2",
+  "q": "Should we pin GitHub Actions by commit SHA, or is a Dependabot-managed tag enough?",
+  "src": "live-facts#32"
+ },
+ {
+  "text": "The short version is to check Entra ID sign-in logs for unexpected activity, check what permissions that principal had in Azure, and roll it immediately.\n\n- Check Microsoft Sentinel for Entra ID sign-in logs tied to that service principal to see if it was used and from what IP.\n- Scope the blast radius by checking what role assignments or Azure RBAC permissions it held on subscriptions or resource groups.\n- Rotate or delete the credential immediately, then check Key Vault or wherever it was stored to see how it leaked.",
+  "label": "clean",
+  "note": "live-facts p3",
+  "q": "What is the right way to investigate a leaked service-principal secret in Azure?",
+  "src": "live-facts#33"
+ },
+ {
+  "text": "It depends whether they are static or dynamic. For static ones, we write the new value as a new version at the same Vault path, and the Vault Agent injector updates the pod. For database credentials, we don't rotate them by hand at all since they're dynamic with a one-hour TTL.\n\n- Static secrets that can't be made dynamic get rotated every 90 days.\n- Apps that only read at start get a rolling restart via Argo CD by bumping the secrets-rev annotation.\n- Old versions are revoked at the source after 24 hours and then destroyed in Vault.",
+  "label": "clean",
+  "note": "backed by the runbook excerpt",
+  "backed": "files",
+  "q": "How do we rotate secrets?",
+  "src": "live-facts#34"
+ },
+ {
+  "text": "The short version is that policies are plain YAML, so squads can read and write them without learning Rego. Also, Kyverno handles mutation for things like Vault annotations and image signature verification natively.\n\n- Plain Kubernetes YAML instead of Rego lowers the barrier for product squads.\n- Native mutation handles Vault sidecars and default network policies automatically.\n- Built-in `verifyImages` with cosign without extra controllers.",
+  "label": "clean",
+  "note": "backed by the ADR excerpt",
+  "backed": "files",
+  "q": "Why did we choose Kyverno over Gatekeeper?",
+  "src": "live-facts#35"
+ },
+ {
+  "text": "Yes, it does for Azure Container Registry, but with a catch. It scans the images at rest in the registry rather than runtime, so it won't see vulnerabilities introduced purely by runtime modifications.\n\n- Scans images stored in ACR asynchronously without running code on the cluster.\n- We still rely on Trivy in the CI pipeline for pre-build and build-time gates.",
+  "label": "clean",
+  "note": "we still rely on Trivy: stated in the profile",
+  "backed": "profile",
+  "q": "Does Defender for Cloud's agentless scanning cover container images pulled from a private registry?",
+  "src": "live-facts#36"
+ },
+ {
+  "text": "First step is disable the principal immediately in Entra ID, then check the audit logs in Microsoft Sentinel to see what it accessed before we pulled it.\n\n- Check Entra ID sign-in logs for unexpected IPs or scopes used by that SPN.\n- Look at Azure Activity Log for resource changes made under those credentials.\n- Rotate or delete the credential once triage is done and review the GitHub workflow or vault path it came from.",
+  "label": "clean",
+  "note": "advice: before we pulled it (a past event, not a practice)",
+  "q": "What is the right way to investigate a leaked service-principal secret in Azure?",
+  "src": "live-facts#37"
+ },
+ {
+  "text": "We're deploying by tag in Argo, but the build pipeline captures the digest. I'd rather we switched GitOps to deploy by digest so an image tag can't be mutated out from under us.\n\n- Argo CD is currently tracking image tags in our manifests.\n- OCI image digests guarantee immutable deployments.",
+  "label": "invented",
+  "note": "invented: we deploy by tag in Argo",
+  "q": "Does our pipeline already push to ACR with digests, or are we still deploying by tag?",
+  "src": "live-facts#38"
+ },
+ {
+  "text": "I don't have that timeline in front of me right now, let me check with the SOC team and come back to you.",
+  "label": "clean",
+  "note": "live-rules 1",
+  "q": "When will you finish the SIEM onboarding for the new subsidiary?",
+  "src": "live-rules#0"
+ },
+ {
+  "text": "I don't have that right in front of me, let me check with compliance and come back to you.",
+  "label": "clean",
+  "note": "live-rules 2",
+  "q": "Who owns the decision on the vendor risk exceptions?",
+  "src": "live-rules#1"
+ },
+ {
+  "text": "I don't have the exact milestone dates in front of me, let me check with the platform team and come back to you.\n\n- Vault Agent injector is in place on all clusters\n- Need to verify the remaining legacy static secrets in production",
+  "label": "invented",
+  "note": "invented: injector in place on all clusters (a bullet, no we or our)",
+  "q": "What is the status of the secrets-rotation migration?",
+  "src": "live-rules#2"
+ },
+ {
+  "text": "I don't have that in front of me, let me check with the platform team and come back to you.",
+  "label": "clean",
+  "note": "live-rules 3b",
+  "q": "What is the status of the secrets-rotation migration?",
+  "src": "live-rules#3"
+ },
+ {
+  "text": "Zero, Kyverno is in Enforce mode on all production clusters.",
+  "label": "invented",
+  "note": "invented: a count (zero) and Enforce on all production clusters",
+  "q": "How many production clusters do we have without admission control today?",
+  "src": "live-rules#4"
+ },
+ {
+  "text": "Yes, it covers images in Azure Container Registry, but agentless scanning looks at disk state rather than registry contents. For our private images, we still rely on Trivy in the pipeline and Defender's registry scanning for real-time CVE detection before deployment.\n\n- Agentless scanning inspects disk snapshots of running VMs and nodes, not the registry itself.\n- Azure Container Registry has its own built-in vulnerability assessment backed by Defender, which is what we use for our private images.\n- I'd rather catch vulnerabilities during the CI build with Trivy before it ever hits ACR anyway.",
+  "label": "clean",
+  "note": "profile: Trivy in the pipeline, Defender on the registry",
+  "backed": "profile",
+  "q": "Does Defender for Cloud's agentless scanning cover container images pulled from a private registry?",
+  "src": "live-rules#5"
+ },
+ {
+  "text": "We should pin by commit SHA. Dependabot-managed tags can be rewritten on the remote if a repo is compromised, so pinning by SHA is the only way to treat third-party actions as immutable dependencies.\n\n- Dependabot can still keep the SHAs updated for us in the PRs.\n- It is the same supply chain rule we apply to base images.",
+  "label": "invented",
+  "note": "invented: the same rule we apply to base images",
+  "q": "Should we pin GitHub Actions by commit SHA, or is a Dependabot-managed tag enough?",
+  "src": "live-rules#6"
+ },
+ {
+  "text": "Revoke it immediately in Entra ID, check the sign-in logs in Sentinel for what it accessed, and look for anomalous Azure activity during the exposure window.\n\n- First action is rotation or deletion, not investigation.\n- Query Microsoft Sentinel for Entra ID sign-in logs filtered by that service principal's object ID.\n- Check Azure Activity Log for resource changes made while the secret was active.",
+  "label": "clean",
+  "note": "live-rules 7",
+  "q": "What is the right way to investigate a leaked service-principal secret in Azure?",
+  "src": "live-rules#7"
+ },
+ {
+  "text": "Kyverno is the better fit for us because it uses native Kubernetes YAML manifests rather than Rego, which makes policy review much easier for developers.\n\n- We already run Kyverno in Enforce on production and Audit on the rest.\n- Gatekeeper was evaluated earlier and we decided against it because Rego added too much friction for squad reviews.",
+  "label": "invented",
+  "note": "invented: why Gatekeeper lost for the squads",
+  "q": "Is OPA Gatekeeper or Kyverno the better fit for us, and why?",
+  "src": "live-rules#8"
+ },
+ {
+  "text": "We’d do it in Audit mode first via Kyverno, then switch to Enforce once we see the numbers. As for the timeline, I don't have that in front of me, let me check with the platform team and come back to you.\n\n- Kyverno admission policy configured for image verification in audit mode\n- Pipeline signs images via Cosign in GitHub Actions during build\n- Transition to Enforce mode after verifying block rates against current registry tags",
+  "label": "invented",
+  "note": "invented: pipeline signs with cosign, admission policy configured (a miss for the detector)",
+  "q": "How would you roll out mandatory image signing, and when can your team have it done?",
+  "src": "live-rules#9"
+ },
+ {
+  "text": "For break-glass accounts, the rule is they should be hardware-token secured, audited on use, and expired when not needed, rather than sitting in a vault. As for who holds ours, I don't have the current rotation list in front of me, let me check with the platform team and update you.",
+  "label": "clean",
+  "note": "live-rules 10",
+  "q": "What is the best practice for break-glass accounts, and who currently holds ours?",
+  "src": "live-rules#10"
+ },
+ {
+  "text": "The short version is, it depends on whether they're dynamic or static. Database credentials are dynamic and issued by the Vault database engine with a one-hour TTL, so they rotate automatically.\n\n- For static secrets, we write the new value as a new version at the same Vault KV v2 path.\n- The Vault Agent injector handles re-rendering, and if an app only reads at start, we bump the secrets-rev annotation in Git for Argo CD to roll it.\n- We leave the old version for 24 hours, then revoke the source credential and destroy the old KV version.",
+  "label": "clean",
+  "note": "backed by the runbook excerpt",
+  "backed": "files",
+  "q": "How do we rotate secrets?",
+  "src": "live-rules#11"
+ },
+ {
+  "text": "The short version is that Kyverno uses plain Kubernetes YAML instead of Rego, so product squads can read and write policies without learning a new language. \n\n- Policies are written as normal Kubernetes manifests so developers can review and propose them themselves.\n- It handles mutation and generation natively, which we rely on for default network policies and Vault annotations.\n- Image signature verification with cosign is built in without needing external controllers.",
+  "label": "clean",
+  "note": "backed by the ADR excerpt",
+  "backed": "files",
+  "q": "Why did we choose Kyverno over Gatekeeper?",
+  "src": "live-rules#12"
+ },
+ {
+  "text": "I don't have that in front of me, let me check the change requests and come back to you.",
+  "label": "clean",
+  "note": "live-rules b1",
+  "q": "Who approved the firewall change last week?",
+  "src": "live-rules#13"
+ },
+ {
+  "text": "No, we shouldn't disable TLS verification. Even on the internal network, we use proper certificates so we don't open the door to a machine-in-the-middle attack between the nodes and the registry.",
+  "label": "invented",
+  "note": "invented: we use proper certificates",
+  "q": "Is it safe to disable TLS verification for the internal registry?",
+  "src": "live-rules#14"
+ },
+ {
+  "text": "I don't have that in front of me, let me check with the platform team and come back to you.",
+  "label": "clean",
+  "note": "live-rules b3",
+  "q": "What's our RTO for the payment service?",
+  "src": "live-rules#15"
+ },
+ {
+  "text": "We start with the architecture in Terraform and the deployment manifests, and we threat model changes whenever we touch trust boundaries like ingress, OIDC federation, or Vault secrets access. \n\n- We look at how pods talk to each other inside AKS and what IAM permissions the service accounts hold.\n- Every new pipeline or admission control rule goes through review in pull requests before it lands in Audit mode.",
+  "label": "invented",
+  "note": "invented: how we threat model",
+  "q": "Can you walk us through your approach to threat modelling?",
+  "src": "live-rules#16"
+ },
+ {
+  "text": "I don't have that in front of me, let me check with the SOC team and come back to you.",
+  "label": "clean",
+  "note": "live-rules 1",
+  "q": "When will you finish the SIEM onboarding for the new subsidiary?",
+  "src": "live-rules#17"
+ },
+ {
+  "text": "I don't have that number in front of me, let me check with the platform team and come back to you.",
+  "label": "clean",
+  "note": "live-rules 4",
+  "q": "How many production clusters do we have without admission control today?",
+  "src": "live-rules#18"
+ },
+ {
+  "text": "By SHA. Treat an action like a dependency you run with your cloud credentials, so we pin by commit hash and let Dependabot handle the updates via PRs.",
+  "label": "invented",
+  "note": "invented: we pin by commit hash",
+  "q": "Should we pin GitHub Actions by commit SHA, or is a Dependabot-managed tag enough?",
+  "src": "live-rules#20"
+ },
+ {
+  "text": "Kyverno is the better fit for us because it uses native Kubernetes YAML syntax rather than Rego, which makes it much easier for product squads to write and review. \n\n- We already run Kyverno in Audit mode on non-prod and Enforce on production.\n- Rego has a steeper learning curve and slowed down squad adoption when we evaluated Gatekeeper.\n- Policy as code belongs in Git alongside manifests, and Kyverno keeps the syntax familiar.",
+  "label": "invented",
+  "note": "invented: why Gatekeeper slowed adoption",
+  "q": "Is OPA Gatekeeper or Kyverno the better fit for us, and why?",
+  "src": "live-rules#22"
+ },
+ {
+  "text": "We do it in audit mode first, block by block, and I don't have a final date for enforcement yet until we see what unsigned images are still coming out of the teams.\n\n- Phase one is signing in the pipeline via GitHub Actions and admitting with Kyverno in audit mode to collect the telemetry.\n- Phase two is reviewing the violation counts with the product squads so they can fix their builds.\n- We only flip Kyverno to enforce once the audit numbers drop to zero.",
+  "label": "invented",
+  "note": "invented: we only flip to enforce at zero violations",
+  "q": "How would you roll out mandatory image signing, and when can your team have it done?",
+  "src": "live-rules#23"
+ },
+ {
+  "text": "The short version is break-glass accounts should be cloud-only, cloud-federated where possible, and protected by hardware MFA with zero standing access. I don't have the current credential holders in front of me, let me check with the platform team and come back to you.",
+  "label": "clean",
+  "note": "live-rules 10",
+  "q": "What is the best practice for break-glass accounts, and who currently holds ours?",
+  "src": "live-rules#24"
+ },
+ {
+  "text": "It depends whether it's a dynamic database secret or a static one. Database credentials are automatically issued by the Vault database engine with a 1-hour TTL, so we don't touch those.\n\n- For static secrets, we write the new value as a new version at the same Vault KV v2 path so Vault keeps the previous version.\n- The Vault Agent injector updates the pod, and for apps that only read at start, we bump the `secrets-rev` annotation in Git for Argo CD to run a rolling restart.\n- We revoke the old credential at the source after 24 hours and destroy the old KV version.",
+  "label": "clean",
+  "note": "backed by the runbook excerpt",
+  "backed": "files",
+  "q": "How do we rotate secrets?",
+  "src": "live-rules#25"
+ },
+ {
+  "text": "The short version is that Kyverno uses plain Kubernetes YAML instead of Rego, so product squads can read and propose policies without learning a new language. \n\n- Policies are written as normal Kubernetes manifests so developers can review them alongside their application charts.\n- Kyverno handles our mutation needs—like injecting the Vault annotations and default network policies—and built-in image signature verification with cosign.\n- We accepted the trade-off that Rego is more expressive for complex cross-resource logic, but for our setup, native YAML won out.",
+  "label": "clean",
+  "note": "backed by the ADR excerpt",
+  "backed": "files",
+  "q": "Why did we choose Kyverno over Gatekeeper?",
+  "src": "live-rules#26"
+ },
+ {
+  "text": "I don't have that in front of me, let me check the Terraform PR history and come back to you.",
+  "label": "clean",
+  "note": "live-rules b1",
+  "q": "Who approved the firewall change last week?",
+  "src": "live-rules#27"
+ },
+ {
+  "text": "No, absolutely not, because that opens us up to man-in-the-middle attacks on image pulls in the cluster. We use Azure Container Registry with proper certs, so there's no reason to drop TLS.",
+  "label": "clean",
+  "note": "profile: ACR; proper certs is a guess",
+  "backed": "profile",
+  "q": "Is it safe to disable TLS verification for the internal registry?",
+  "src": "live-rules#28"
+ },
+ {
+  "text": "I don't have that in front of me, let me check with the platform team and come back to you.",
+  "label": "clean",
+  "note": "live-rules b3",
+  "q": "What's our RTO for the payment service?",
+  "src": "live-rules#29"
+ },
+ {
+  "text": "The short version is we do lightweight threat modelling alongside the design review for any new pipeline component or admission rule. We focus on trust boundaries—like where code meets credentials or pods meet the cluster—and map out failure modes before writing any Terraform or Kyverno policy.\n\n- We look at OIDC trust with Azure, Vault secret injection paths, and Kyverno bypass risks.\n- Anything touching production goes through an audit-mode rollout first so we can catch edge cases in real traffic.",
+  "label": "invented",
+  "note": "invented: how we do threat modelling",
+  "q": "Can you walk us through your approach to threat modelling?",
+  "src": "live-rules#30"
+ },
+ {
+  "text": "Pin by commit SHA. A tag can be moved, so pinning by SHA is the only way to treat a third-party action like a proper immutable dependency.\n\n- We treat GitHub Actions as supply chain code running with OIDC permissions.\n- Dependabot can still open PRs to bump the SHA when the upstream author updates the tag.",
+  "label": "clean",
+  "note": "profile: supply-chain standing position",
+  "backed": "profile",
+  "q": "Should we pin GitHub Actions by commit SHA, or is a Dependabot-managed tag enough?",
+  "src": "live-rules#32"
+ },
+ {
+  "text": "Revoke it immediately, check Microsoft Entra sign-in logs in Sentinel for unusual activity from that principal, and trace what it accessed in Azure.\n\n- Rotate or delete the credential first before starting the forensics.\n- Run a Sentinel query on AzureActivity and audit logs to see if the secret was used to read resources or grant new permissions.",
+  "label": "clean",
+  "note": "live-rules 7",
+  "q": "What is the right way to investigate a leaked service-principal secret in Azure?",
+  "src": "live-rules#33"
+ },
+ {
+  "text": "Kyverno is the better fit for us because it uses native Kubernetes YAML, which makes policies much easier for the squads to read and write without learning Rego. \n\n- Native syntax matches how teams already write manifests\n- Runs in Audit mode first so we can safely measure violations before blocking anything in production\n- Proven track record in our setup with Enforce on prod and Audit elsewhere",
+  "label": "clean",
+  "note": "profile: Enforce on prod, Audit elsewhere",
+  "backed": "profile",
+  "q": "Is OPA Gatekeeper or Kyverno the better fit for us, and why?",
+  "src": "live-rules#34"
+ },
+ {
+  "text": "We do it in audit mode first through Kyverno to catch unsigned images without breaking deployments, then we enforce. As for the timeline, I don't have that in front of me, let me check team capacity and come back to you.\n\n- Pipeline already pushes to ACR with digests, so the signing step can hook into GitHub Actions.\n- Kyverno handles the verifyImages rule at admission.\n- Need to check current sprint load before committing to a hard date.",
+  "label": "invented",
+  "note": "invented: the pipeline already pushes to ACR with digests",
+  "q": "How would you roll out mandatory image signing, and when can your team have it done?",
+  "src": "live-rules#35"
+ },
+ {
+  "text": "The short version is that break-glass accounts need to be cloud-native, monitored in Sentinel, and vaulted with credentials that rotate on use, but I'll have to check who holds the keys on our side.\n\n- I'll check with the platform team on the current key holders.\n- In our setup, any use of an emergency account triggers an immediate alert in Sentinel.",
+  "label": "invented",
+  "note": "invented: any emergency account use alerts in Sentinel",
+  "q": "What is the best practice for break-glass accounts, and who currently holds ours?",
+  "src": "live-rules#36"
+ },
+ {
+  "text": "I don't have that in front of me, let me check the audit logs and come back to you.",
+  "label": "clean",
+  "note": "live-rules b1",
+  "q": "Who approved the firewall change last week?",
+  "src": "live-rules#37"
+ },
+ {
+  "text": "No, absolutely not. That breaks the trust path between the cluster and the container registry.\n\n- The short version is that without TLS verification, anyone on the network path can intercept or tamper with the image pull.\n- If we have a cert issue on the internal registry, we fix the cert, we don't turn off verification.",
+  "label": "clean",
+  "note": "live-rules b2",
+  "q": "Is it safe to disable TLS verification for the internal registry?",
+  "src": "live-rules#38"
+ },
+ {
+  "text": "I don't have that in front of me, let me check with the platform team and come back to you.",
+  "label": "clean",
+  "note": "live-rules b3",
+  "q": "What's our RTO for the payment service?",
+  "src": "live-rules#39"
+ },
+ {
+  "text": "The short version is we threat model changes that touch trust boundaries—like new paths into the cluster or changes to how pods get their secrets—using a lightweight process tied to the pull request. We don't do massive upfront docs; we look at the data flow, map where credentials or permissions move, and make sure the guardrails in Terraform or Kyverno catch any drift.\n\n- Focus on trust boundaries: inbound traffic, pod-to-pod identity, and secret access via Vault.\n- Treat threat models as living code in the repo, reviewed alongside the PR rather than sitting in a wiki.\n- Push controls into automated checks—like admission policy or IaC scans—rather than relying on manual reviews.",
+  "label": "invented",
+  "note": "invented: how we threat model",
+  "q": "Can you walk us through your approach to threat modelling?",
+  "src": "live-rules#40"
+ },
+ {
+  "text": "We should pin by commit SHA. A tag can be moved, so pinning by SHA is the only way to treat a third-party action like an immutable dependency.\n\n- Dependabot can still open PRs to update the SHAs when a new release comes out.\n- A mutable tag in a supply chain pipeline is an unnecessary vector.",
+  "label": "clean",
+  "note": "live-rules 6",
+  "q": "Should we pin GitHub Actions by commit SHA, or is a Dependabot-managed tag enough?",
+  "src": "live-rules#42"
+ },
+ {
+  "text": "The short version is: revoke it first, then check Microsoft Sentinel for what it touched, and verify the sign-in logs in Entra ID.\n\n- Revoke the secret immediately in Entra ID to cut off access.\n- Query Microsoft Sentinel for AKS audit logs and activity from that principal's object ID during the window.\n- Check Entra ID sign-in logs to see what IP addresses and API endpoints were accessed.",
+  "label": "clean",
+  "note": "live-rules 7",
+  "q": "What is the right way to investigate a leaked service-principal secret in Azure?",
+  "src": "live-rules#43"
+ },
+ {
+  "text": "Kyverno is a better fit for our setup because it uses Kubernetes-native YAML for policies instead of Rego, which keeps the learning curve flat for the product squads.\n\n- Policies are written as standard Kubernetes resources, so reviewing them in pull requests looks just like app manifests.\n- We run it in Enforce mode on production and Audit on the rest, which gives us the numbers before blocking anything.\n- Gatekeeper required learning Rego and maintaining separate constraint templates, which didn't fit how our teams consume policy.",
+  "label": "clean",
+  "note": "profile: Enforce on prod, Audit elsewhere",
+  "backed": "profile",
+  "q": "Is OPA Gatekeeper or Kyverno the better fit for us, and why?",
+  "src": "live-rules#44"
+ },
+ {
+  "text": "No, absolutely not. That breaks our trust path between AKS and Azure Container Registry.\n\n- We rely on valid certificates for image pulls and runtime verification.\n- If we disable TLS verification, we open up man-in-the-middle risks for container pulls across the cluster.",
+  "label": "invented",
+  "note": "invented: we rely on valid certificates",
+  "q": "Is it safe to disable TLS verification for the internal registry?",
+  "src": "live-rules#45"
+ },
+ {
+  "text": "The short version is we threat model the high-risk paths—like secret injection and GitOps deployment flow—using STRIDE, and we tie every mitigation directly to a control in Terraform or Kyverno.\n\n- We focus on components with cross-boundary trust, like the Argo CD sync or Vault Agent injection.\n- Findings become issues in our backlog with assigned owners, rather than sitting in a static document.",
+  "label": "invented",
+  "note": "invented: we use STRIDE, findings go to our backlog",
+  "q": "Can you walk us through your approach to threat modelling?",
+  "src": "live-rules#46"
+ },
+ {
+  "text": "The short version is Kyverno, and that’s why we already picked it and run it in enforce on prod today. It’s native Kubernetes YAML, so our devs and the platform team can actually read and write policies without having to learn Rego.\n\n- Native YAML means policy as code lives in Git and gets reviewed like any normal Kubernetes manifest, without a steep learning curve.\n- It handles mutation and resource generation out of the box, not just validation, which saves us from stitching together extra tooling.\n- It fits our rollout model directly: we can run any new policy in Audit mode to gather metrics before we switch it to Enforce.",
+  "label": "clean",
+  "note": "profile: Enforce on prod",
+  "backed": "profile",
+  "q": "Is OPA Gatekeeper or Kyverno the better fit for us, and why?",
+  "src": "live-rules#52"
+ }
+]

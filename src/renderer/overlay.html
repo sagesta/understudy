@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; script-src 'self'; style-src 'self'; connect-src 'none'">
+<title>Understudy overlay</title>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="overlay.css">
+</head>
+<body>
+<header id="bar">
+  <div id="status">
+    <span id="dot"></span>
+    <span id="state">Listening</span>
+    <span id="clock">00:00</span>
+  </div>
+  <div id="meters">
+    <span class="meter me" id="m-me" title="Microphone"><b>You</b><i></i><i></i><i></i><i></i><i></i></span>
+    <span class="meter them" id="m-them" title="Computer audio"><b>Them</b><i></i><i></i><i></i><i></i><i></i></span>
+  </div>
+  <span class="grow"></span>
+  <button id="pause" class="ib ghost" aria-label="Pause"></button>
+  <button id="hide" class="ib ghost" aria-label="Hide overlay"></button>
+  <button id="stop" aria-label="End meeting"></button>
+</header>
+
+<div id="controls">
+  <div id="mode" title="Mode"></div>
+  <label id="stylepick" title="Answer style"><select id="style" aria-label="Answer style"></select></label>
+</div>
+
+<section id="notice" hidden role="status"></section>
+
+<section id="strip" hidden role="group" aria-label="Waiting for you" aria-live="polite"></section>
+
+<section id="transcript" aria-label="Live transcript">
+  <button id="tr-toggle" class="ghost" aria-expanded="true"><span>Transcript</span></button>
+  <div id="tr-lines"></div>
+</section>
+
+<main id="cards" aria-live="polite"></main>
+
+<footer>
+  <div id="actions"></div>
+  <form id="askform">
+    <input id="ask" type="text" placeholder="Ask privately…" autocomplete="off" spellcheck="false" aria-label="Ask privately">
+    <button id="asksend" class="ib primary" type="submit" aria-label="Send"></button>
+  </form>
+  <div id="meta"></div>
+</footer>
+<script src="ui.js"></script>
+<script src="overlay.js"></script>
+</body>
+</html>

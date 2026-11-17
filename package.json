@@ -1,0 +1,47 @@
+{
+  "name": "understudy",
+  "version": "0.1.0",
+  "description": "A real-time meeting copilot that knows your work and answers in your voice.",
+  "main": "src/main/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test --test-force-exit --test-timeout=120000 \"test/*.test.js\"",
+    "mcp": "node src/mcp/server.js",
+    "dist": "electron-builder --win",
+    "dist:recorder": "electron-builder --win --config electron-builder.recorder.json"
+  },
+  "build": {
+    "appId": "app.understudy.desktop",
+    "productName": "Understudy",
+    "files": [
+      "src/**/*",
+      "personalities/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "assets/icon.png"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false
+    }
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "ws": "^8.23.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "electron": "^45.3.2",
+    "electron-builder": "^26.18.0"
+  },
+  "engines": {
+    "node": ">=22.12"
+  }
+}
